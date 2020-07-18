@@ -7,8 +7,9 @@ typedef struct trie_node {
     unsigned short int isTerminal;
     struct trie_node *parent;
     struct trie_node *children[26];
-    struct trie_node *(*get_child)(struct trie_node *self, const char letter);
     struct trie_node *(*add_child)(struct trie_node *self, const char letter, unsigned short isTerminal);
+    struct trie_node *(*get_child)(struct trie_node *self, const char letter);
+    struct trie_node *(*remove_child)(struct trie_node *self, const char letter);
 } trie_node_t;
 
 typedef struct trie {
@@ -20,32 +21,33 @@ typedef struct trie {
 } trie_t;
 
 
+static inline trie_node_t *trie_node_add_child_to_impl(trie_node_t *node, char letter, unsigned short isTerminal);
 static inline trie_node_t *trie_node_get_child_impl(trie_node_t *node, char letter);
-static inline trie_node_t *trie_node_add_child_impl(trie_node_t *node, char letter, unsigned short isTerminal);
+static inline trie_node_t *trie_node_remove_child_impl(trie_node_t *node, char letter);
 
 static inline void trie_add_word_impl(trie_t *self, const char *word);
 static inline int trie_includes_word_impl(trie_t *self, const char *word);
 
-static inline trie_node_t *trie_node_initialize(char letter, unsigned short isTerminal, trie_node_t *parent) {
-    trie_node_t *node = (trie_node_t *)malloc(sizeof(trie_node_t));
-    memset(node->children, 0, sizeof(node->children));
-    node->letter = letter;
-    node->isTerminal = isTerminal;
-    node->parent = parent;
-    node->add_child = trie_node_add_child_impl;
-    node->get_child = trie_node_get_child_impl;
-    if (parent != 0) {
-        parent->children[letter] = node;
+static inline trie_node_t *trie_node_add_child_to_impl(trie_node_t *node, char letter, unsigned short isTerminal) {
+    trie_node_t *child = (trie_node_t *)malloc(sizeof(trie_node_t));
+    memset(child->children, 0, sizeof(child->children));
+    child->letter = letter;
+    child->isTerminal = isTerminal;
+    child->add_child = trie_node_add_child_to_impl;
+    child->get_child = trie_node_get_child_impl;
+    child->remove_child = trie_node_remove_child_impl;
+    if ((child->parent = node) != 0) {
+        node->children[letter - 97] = child;
     }
-    return node;
+    return child;
 }
 
 static inline trie_node_t *trie_node_get_child_impl(trie_node_t *node, const char letter) {
     return node->children[letter - 97];
 }
 
-static inline trie_node_t *trie_node_add_child_impl(trie_node_t *node, const char letter, unsigned short isTerminal) {
-    return node->children[letter - 97] = trie_node_initialize(letter, isTerminal, node);
+static inline trie_node_t *trie_node_remove_child_impl(trie_node_t *node, const char letter) {
+    return node->children[letter - 97] = NULL;
 }
 
 static inline void trie_node_destroy(trie_node_t *node) {
@@ -54,7 +56,7 @@ static inline void trie_node_destroy(trie_node_t *node) {
             trie_node_destroy(node->children[i]);
         }
         if (node->parent) {
-            node->parent->children[node->letter] = 0;
+            node->parent->remove_child(node->parent, node->letter);
         }
         free(node);
     }
@@ -103,7 +105,7 @@ static inline int trie_includes_word_impl(trie_t *self, const char *word) {
 
 static inline trie_t *trie_initialize() {
     trie_t *trie = (trie_t *)malloc(sizeof(trie_t));
-    trie->root = trie_node_initialize('@', 0, NULL);
+    trie->root = trie_node_add_child_to_impl(NULL, '@', 0);
     trie->add_word = trie_add_word_impl;
     trie->includes = trie_includes_word_impl;
     trie->word_count = 0;
