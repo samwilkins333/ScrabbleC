@@ -2,6 +2,8 @@
 #include <zconf.h>
 #include "trie.h"
 
+#define verify_word(word) printf("%s exists? (%d)", word, trie->includes(trie, word))
+
 int main() {
     FILE *dictionary = fopen("../ospd4.txt", "r");
     if (dictionary == NULL) {
@@ -10,11 +12,13 @@ int main() {
     }
     size_t len = 0;
     char *word;
-    trie_t *trie = initialize_trie();
+    trie_t *trie = trie_initialize();
     while (getline(&word, &len, dictionary) != -1) {
-        trie->add_word(word);
+        word[strcspn(word, "\n")] = 0;
+        trie->add_word(trie, word);
     }
-    trie_node_t *node = initialize_node('c', 0, NULL);
-    printf("%c\n", node->letter);
+    verify_word("fish");
+    verify_word("asglsdl");
+    trie_destroy(trie);
     return 0;
 }
