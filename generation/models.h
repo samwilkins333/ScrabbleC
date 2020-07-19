@@ -31,7 +31,7 @@ typedef struct board_state_unit {
 
 typedef struct enriched_tile_placement {
     tile_placement_t root;
-    list_t cross;
+    list_t *cross;
     list_link_t link;
 } enriched_tile_placement_t;
 

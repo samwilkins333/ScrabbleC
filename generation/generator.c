@@ -1,8 +1,4 @@
-#include "configuration.h"
-#include "../vocabulary/trie_node.h"
-#include "../utilities/list.h"
-#include "models.h"
-#include <stdlib.h>
+#include "generator.h"
 
 list_t computeAllCandidates(list_t *rack, board_state_unit_t played[DIM][DIM]) {
     list_t all;
@@ -32,10 +28,6 @@ static void generate(int h_x, int h_y, int x, int y, list_t *rack, list_t *place
 
 }
 
-static inline int apply_scorer(list_t *placed, board_state_unit_t played[DIM][DIM], int score) {
-
-}
-
 static inline void evaluate_and_proceed(int h_x, int h_y, int x, int y, list_t *rack, list_t *placed,
         int accumulated, list_t *all, trie_node_t *node, direction_t *d, board_state_unit_t played[DIM][DIM]) {
     int total_score;
@@ -62,6 +54,44 @@ static inline void evaluate_and_proceed(int h_x, int h_y, int x, int y, list_t *
             generate(h_x, h_y, next.x, next.y, rack, placed, accumulated, all, cross_anchor, i, played);
         }
     }
+}
+
+static inline int apply_scorer(list_t *placed, board_state_unit_t played[DIM][DIM], int accumulated) {
+    list_t primary;
+    list_init(&primary);
+    int sum = 0;
+    list_iterate(placed, placement, enriched_tile_placement_t, link) {
+        list_insert_tail(&primary, &placement->root.link);
+        sum += compute_score_of(played, placement->cross, 0);
+    }
+    sum += compute_score_of(played, &primary, accumulated);
+    return sum;
+}
+
+static inline int compute_score_of(board_state_unit_t played[DIM][DIM], list_t *placements, int sum) {
+    int word_multiplier = 1;
+    int new_tiles = 0;
+
+    list_iterate(placements, placement, tile_placement_t, link) {
+        tile_t tile = placement->tile;
+        board_state_unit_t state = played[placement->y][placement->x];
+        if (!state.tile) {
+            new_tiles++;
+        }
+        multiplier_t *multiplier = state.multiplier;
+        if (!multiplier || state.tile) {
+            sum += tile.value;
+        } else {
+            sum += (multiplier->letter * tile.value);
+            word_multiplier *= multiplier->word;
+        }
+    }
+
+    int total = sum * word_multiplier;
+    if (new_tiles == RACK_CAPACITY) {
+        total += 50;
+    }
+    return total;
 }
 
 
