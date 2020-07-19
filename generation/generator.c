@@ -109,15 +109,17 @@ static inline void try_letter_placement(size_t  h_x, size_t h_y, size_t x, size_
                                         int is_blank, size_t current_placed_count) {
     tile_t *resolved_tile = to_place;
     if (is_blank) {
-        resolved_tile = (tile_t *)malloc(sizeof(tile_t));
+        memset(resolved_tile = (tile_t *)malloc(sizeof(tile_t)), 0, sizeof(tile_t));
         memcpy(resolved_tile, to_place, sizeof(tile_t));
         resolved_tile->letter_proxy = letter;
     }
     trie_node_t *child;
     enriched_tile_placement_t *enriched = (enriched_tile_placement_t *)malloc(sizeof(enriched_tile_placement_t));
+    memset(enriched, 0, sizeof(enriched_tile_placement_t));
     list_init(&enriched->cross);
     if ((child = trie_node_get_child(node, letter)) && compute_cross_word(x, y, to_place, d, dim, played, &enriched->cross)) {
         tile_placement_t *root = (tile_placement_t *)malloc(sizeof(tile_placement_t));
+        memset(root, 0, sizeof(tile_placement_t));
         root->tile = resolved_tile;
         root->x = x;
         root->y = y;
@@ -147,6 +149,7 @@ static inline void evaluate_and_proceed(size_t  h_x, size_t h_y, size_t x, size_
         if (d == &left || d == &up || !next_tile(h_x, h_y, i, dim, played, NULL)) {
             if ((total_score = apply_scorer(placed, dim, played, accumulated))) {
                 scored_candidate_t *scored_candidate = (scored_candidate_t *)malloc(sizeof(scored_candidate_t));
+                memset(scored_candidate, 0, sizeof(scored_candidate_t));
                 scored_candidate->direction = normalize(d);
                 scored_candidate->score = total_score;
                 list_init(&scored_candidate->placements);
@@ -182,6 +185,7 @@ static inline int compute_cross_word(size_t  s_x, size_t  s_y, tile_t *to_place,
 
     while (tile) {
         tile_placement_t *placement = (tile_placement_t *)malloc(sizeof(tile_placement_t));
+        memset(placement, 0, sizeof(tile_placement_t));
         placement->x = x;
         placement->y = y;
         placement->tile = tile;

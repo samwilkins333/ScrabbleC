@@ -8,7 +8,7 @@ typedef struct trie_node {
     char letter;
     unsigned short int is_terminal;
     struct trie_node *parent;
-    struct trie_node *children[26];
+    struct trie_node *children[27];
 } trie_node_t;
 
 trie_node_t *trie_node_add_child_to(trie_node_t *node, char letter, unsigned short is_terminal);
