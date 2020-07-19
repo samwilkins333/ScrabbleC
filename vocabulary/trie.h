@@ -11,8 +11,8 @@ typedef struct trie {
     long node_count;
 } trie_t;
 
-extern inline trie_t *trie_initialize();
-extern inline unsigned short trie_add_nodes(trie_t *trie, const char *word);
-extern inline void trie_add_word(trie_t *self, const char *word);
-extern inline int trie_includes_word(trie_t *self, const char *word);
-extern inline void trie_destroy(trie_t *trie);
+trie_t *trie_initialize();
+unsigned short trie_add_nodes(trie_t *trie, const char *word);
+void trie_add_word(trie_t *self, const char *word);
+int trie_includes_word(trie_t *self, const char *word);
+void trie_destroy(trie_t *trie);

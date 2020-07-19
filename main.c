@@ -1,6 +1,8 @@
 #include "vocabulary/trie_factory.h"
 #include "generation/generator.h"
 
+extern trie_node_t *trie_root;
+
 int main() {
     trie_t *trie = construct_trie_from("../ospd4.txt");
     if (!trie) {
@@ -22,6 +24,12 @@ int main() {
             played[y][x] = unit;
         }
     }
-    computeAllCandidates(&rack, (board_state_unit_t ***) played, DIMENSIONS, &all);
+    for (int i = 0; i < RACK_CAPACITY; ++i) {
+        tile_t *tile = (tile_t *)malloc(sizeof(tile_t));
+        tile->letter = 'a';
+        tile->value = 1;
+        list_insert_tail(&rack, &tile->link);
+    }
+    computeAllCandidates(&rack, DIMENSIONS, played, &all);
     return 0;
 }

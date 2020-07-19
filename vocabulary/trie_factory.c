@@ -1,6 +1,6 @@
 #include "trie_factory.h"
 
-extern inline trie_t *construct_trie_from(const char *relative_filepath) {
+inline trie_t *construct_trie_from(const char *relative_filepath) {
     trie_t *trie = trie_initialize();
     if (!trie) {
         return NULL;

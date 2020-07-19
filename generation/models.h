@@ -1,3 +1,6 @@
+#pragma once
+
+#include <stdlib.h>
 #include "../utilities/list.h"
 
 typedef struct coordinates {
@@ -44,64 +47,19 @@ typedef struct direction {
     int y_inc;
 } direction_t;
 
-direction_t left = { "left" -1, 0 };
-direction_t right = { "right", 1, 0 };
-direction_t up = { "up", 0, -1 };
-direction_t down = { "down", 0, 1 };
+extern direction_t left;
+extern direction_t right;
+extern direction_t up;
+extern direction_t down;
 
-extern inline direction_t *inverse(direction_t *direction) {
-    if (direction == &left) {
-        return &right;
-    }
-    if (direction == &right) {
-        return &left;
-    }
-    if (direction == &up) {
-        return &down;
-    }
-    return &up;
-}
+extern direction_t *main_directions[];
+extern direction_t *all_directions[];
 
-extern inline direction_t *perpendicular(direction_t *direction) {
-    if (direction == &left || direction == &right) {
-        return &down;
-    }
-    return &right;
-}
-
-extern inline direction_t *normalize(direction_t *direction) {
-    if (direction == &left || direction == &right) {
-        return &right;
-    }
-    return &down;
-}
-
-extern inline int next_coordinates(int x, int y, direction_t *d, coordinates_t *next) {
-    int n_x = x + d->x_inc;
-    int n_y = y + d->y_inc;
-    if (n_x >= 0 && n_x < DIMENSIONS && n_y >= 0 && n_y < DIMENSIONS) {
-        if (next) {
-            next->x = n_x;
-            next->y = n_y;
-        }
-        return 1;
-    }
-    return 0;
-}
-
-extern inline int next_tile(int x, int y, direction_t *d, board_state_unit_t ***played, tile_placement_t *out) {
-    coordinates_t next;
-    tile_t *tile;
-    if (next_coordinates(x, y, d, &next) && (tile = played[next.y][next.x]->tile)) {
-        if (out) {
-            out->tile = tile;
-            out->x = next.x;
-            out->y = next.y;
-        }
-        return 1;
-    }
-    return 0;
-}
+direction_t *inverse(direction_t *direction);
+direction_t *perpendicular(direction_t *direction);
+direction_t *normalize(direction_t *direction);
+int next_coordinates(int x, int y, direction_t *d, coordinates_t *next);
+int next_tile(int x, int y, direction_t *d, size_t dim, board_state_unit_t *played[dim][dim], tile_placement_t *out);
 
 typedef struct scored_candidate {
     list_t placements;

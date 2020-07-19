@@ -1,24 +1,24 @@
 #include "generator.h"
 
-char alphabet[] = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '{' };
+trie_node_t *trie_root;
 
-int computeAllCandidates(list_t *rack, board_state_unit_t ***played, size_t dimensions, list_t *all) {
-    size_t existing_tile_count;
-    if (!validate_input(played, rack, dimensions, &existing_tile_count)) {
+int computeAllCandidates(list_t *rack, size_t dim, board_state_unit_t *played[dim][dim], list_t *all) {
+    size_t existing_tile_count = 0;
+    if (!validate_input(dim, played, rack, &existing_tile_count)) {
         return 0;
     }
 
     list_size(rack_size, rack, r, tile_t, link)
     if (rack_size) {
         if (!existing_tile_count) {
-            size_t midpoint = dimensions / 2;
-            generate_at_hook(midpoint, midpoint, rack, all, played);
+            size_t midpoint = dim / 2;
+            generate_at_hook(midpoint, midpoint, rack, all, dim, played);
         } else {
             for (int y = 0; y < DIMENSIONS; y++) {
                 for (int x = 0; x < DIMENSIONS; x++) {
                     for (int i = 0; i < 4; ++i) {
-                        if (next_tile(x, y, all_directions[i], played, NULL)) {
-                            generate_at_hook(x, y, rack, all, played);
+                        if (next_tile(x, y, all_directions[i], dim, played, NULL)) {
+                            generate_at_hook(x, y, rack, all, dim, played);
                             break;
                         }
                     }
@@ -30,23 +30,23 @@ int computeAllCandidates(list_t *rack, board_state_unit_t ***played, size_t dime
     return 1;
 }
 
-void generate_at_hook(int x, int y, list_t *rack, list_t *all, board_state_unit_t ***played) {
+void generate_at_hook(int x, int y, list_t *rack, list_t *all, size_t dim, board_state_unit_t *played[dim][dim]) {
     list_t placed;
     for (int i = 0; i < 2; ++i) {
         list_init(&placed);
-        generate(x, y, x, y, rack, &placed, 0, all, trie_root, main_directions[i], played);
+        generate(x, y, x, y, rack, &placed, 0, all, trie_root, main_directions[i], dim, played);
     }
 }
 
-int validate_input(board_state_unit_t ***played, list_t *rack, size_t dimensions, size_t *existing_tile_count) {
+int validate_input(size_t dim, board_state_unit_t *played[dim][dim], list_t *rack, size_t *existing_tile_count) {
     if (!trie_root) {
         return 0;
     }
-    if (dimensions < 3 || dimensions % 2 == 0) {
+    if (dim < 3 || dim % 2 == 0) {
         return 0;
     }
-    for (int y = 0; y < dimensions; ++y) {
-        for (int x = 0; x < dimensions; ++x) {
+    for (int y = 0; y < dim; ++y) {
+        for (int x = 0; x < dim; ++x) {
             if (!played[y][x]->multiplier) {
                 return 0;
             }
@@ -63,7 +63,7 @@ int validate_input(board_state_unit_t ***played, list_t *rack, size_t dimensions
 }
 
 static inline void generate(size_t h_x, size_t h_y, size_t x, size_t y, list_t *rack, list_t *placed,
-        int accumulated, list_t *all, trie_node_t *node, direction_t *d, board_state_unit_t ***played) {
+        int accumulated, list_t *all, trie_node_t *node, direction_t *d, size_t dim, board_state_unit_t *played[dim][dim]) {
     tile_t *tile = played[y][x]->tile;
     direction_t *i = inverse(d);
     trie_node_t *child_node;
@@ -83,10 +83,10 @@ static inline void generate(size_t h_x, size_t h_y, size_t x, size_t y, list_t *
                     visited[letter - 97] = 1;
                     if (letter == BLANK) {
                         for (int l = 0; l < 26; ++l) {
-                            try_letter_placement(h_x, h_x, x, y, rack, placed, accumulated, all, node, d, played, to_place, alphabet[l], 1, current_placed_count);
+                            try_letter_placement(h_x, h_x, x, y, rack, placed, accumulated, all, node, d, dim, played, to_place, alphabet[l], 1, current_placed_count);
                         }
                     } else {
-                        try_letter_placement(h_x, h_x, x, y, rack, placed, accumulated, all, node, d, played, to_place, letter, 0, current_placed_count);
+                        try_letter_placement(h_x, h_x, x, y, rack, placed, accumulated, all, node, d, dim, played, to_place, letter, 0, current_placed_count);
                     }
                 }
                 list_insert_tail(rack, &to_place->link);
@@ -96,16 +96,16 @@ static inline void generate(size_t h_x, size_t h_y, size_t x, size_t y, list_t *
         trie_node_t *cross_anchor;
         coordinates_t next;
         if (current_placed_count && (cross_anchor = trie_node_get_child(node, DELIMITER)) && next_coordinates(h_x, h_y, i, &next)) {
-            generate(h_x, h_y, next.x, next.y, rack, placed, accumulated, all, cross_anchor, i, played);
+            generate(h_x, h_y, next.x, next.y, rack, placed, accumulated, all, cross_anchor, i, dim, played);
         }
     } else if (node && (child_node = trie_node_get_child(node, tile->resolved_letter()))) {
-        evaluate_and_proceed(h_x, h_y, x, y, rack, placed, accumulated + tile->value, all, child_node, d, played);
+        evaluate_and_proceed(h_x, h_y, x, y, rack, placed, accumulated + tile->value, all, child_node, d, dim, played);
     }
 }
 
 static inline void try_letter_placement(size_t  h_x, size_t h_y, size_t x, size_t y, list_t *rack, list_t *placed,
-                                        size_t accumulated, list_t *all, trie_node_t *node, direction_t *d,
-                                        board_state_unit_t ***played, tile_t *to_place, const char letter,
+                                        size_t accumulated, list_t *all, trie_node_t *node, direction_t *d, size_t dim,
+                                        board_state_unit_t *played[dim][dim], tile_t *to_place, const char letter,
                                         int is_blank, size_t current_placed_count) {
     tile_t *resolved_tile = to_place;
     if (is_blank) {
@@ -115,14 +115,15 @@ static inline void try_letter_placement(size_t  h_x, size_t h_y, size_t x, size_
     }
     trie_node_t *child;
     enriched_tile_placement_t *enriched = (enriched_tile_placement_t *)malloc(sizeof(enriched_tile_placement_t));
-    if ((child = trie_node_get_child(node, letter)) && compute_cross_word(x, y, to_place, d, played, &enriched->cross)) {
+    list_init(&enriched->cross);
+    if ((child = trie_node_get_child(node, letter)) && compute_cross_word(x, y, to_place, d, dim, played, &enriched->cross)) {
         tile_placement_t *root = (tile_placement_t *)malloc(sizeof(tile_placement_t));
         root->tile = resolved_tile;
         root->x = x;
         root->y = y;
         enriched->root = root;
         list_insert_tail(placed, &enriched->link);
-        evaluate_and_proceed(h_x, h_y, x, y, rack, placed, accumulated, all, child, d, played);
+        evaluate_and_proceed(h_x, h_y, x, y, rack, placed, accumulated, all, child, d, dim, played);
         while (1) {
             list_size(size, placed, p, enriched_tile_placement_t, link)
             if (size == current_placed_count) {
@@ -139,37 +140,36 @@ static inline void try_letter_placement(size_t  h_x, size_t h_y, size_t x, size_
 
 static inline void evaluate_and_proceed(size_t  h_x, size_t h_y, size_t x, size_t y, list_t *rack, list_t *placed,
                                         size_t accumulated, list_t *all, trie_node_t *node, direction_t *d,
-                                        board_state_unit_t ***played) {
+                                        size_t dim, board_state_unit_t *played[dim][dim]) {
     size_t total_score;
     direction_t *i = inverse(d);
-    if (node->is_terminal && !next_tile(x, y, d, played, NULL)) {
-        if (d == &left || d == &up || !next_tile(h_x, h_y, i, played, NULL)) {
-            if ((total_score = apply_scorer(placed, played, accumulated))) {
+    if (node->is_terminal && !next_tile(x, y, d, dim, played, NULL)) {
+        if (d == &left || d == &up || !next_tile(h_x, h_y, i, dim, played, NULL)) {
+            if ((total_score = apply_scorer(placed, dim, played, accumulated))) {
                 scored_candidate_t *scored_candidate = (scored_candidate_t *)malloc(sizeof(scored_candidate_t));
                 scored_candidate->direction = normalize(d);
                 scored_candidate->score = total_score;
                 list_init(&scored_candidate->placements);
                 list_iterate(placed, enriched, enriched_tile_placement_t, link) {
-                    list_remove(&enriched->link);
                     list_insert_tail(&scored_candidate->placements, &enriched->root->link);
                 }
                 list_insert_tail(all, &scored_candidate->link);
             }
         }
-        coordinates_t next;
-        trie_node_t *cross_anchor;
-        if (next_coordinates(x, y, d, &next)) {
-            generate(h_x, h_y, next.x, next.y, rack, placed, accumulated, all, node, d, played);
-        } else if ((cross_anchor = trie_node_get_child(node, DELIMITER)) && next_coordinates(h_x, h_y, i, &next)) {
-            generate(h_x, h_y, next.x, next.y, rack, placed, accumulated, all, cross_anchor, i, played);
-        }
+    }
+    coordinates_t next;
+    trie_node_t *cross_anchor;
+    if (next_coordinates(x, y, d, &next)) {
+        generate(h_x, h_y, next.x, next.y, rack, placed, accumulated, all, node, d, dim, played);
+    } else if ((cross_anchor = trie_node_get_child(node, DELIMITER)) && next_coordinates(h_x, h_y, i, &next)) {
+        generate(h_x, h_y, next.x, next.y, rack, placed, accumulated, all, cross_anchor, i, dim, played);
     }
 }
 
 static inline int compute_cross_word(size_t  s_x, size_t  s_y, tile_t *to_place, direction_t *d,
-                                     board_state_unit_t ***played, list_t *collector) {
+                                     size_t dim, board_state_unit_t *played[dim][dim], list_t *collector) {
     d = perpendicular(d);
-    if (!next_tile(s_x, s_y, d, played, NULL) || !next_tile(s_x, s_y, inverse(d), played, NULL)) {
+    if (!next_tile(s_x, s_y, d, dim, played, NULL) || !next_tile(s_x, s_y, inverse(d), dim, played, NULL)) {
         return 1;
     }
     tile_t *tile = to_place;
@@ -190,13 +190,13 @@ static inline int compute_cross_word(size_t  s_x, size_t  s_y, tile_t *to_place,
             break;
         }
         tile_placement_t next;
-        if (next_tile(x, y, d, played, &next)) {
+        if (next_tile(x, y, d, dim, played, &next)) {
             x = next.x;
             y = next.y;
             tile = next.tile;
         } else {
             d = inverse(d);
-            if (d == original || !next_tile(s_x, s_y, d, played, &next)) {
+            if (d == original || !next_tile(s_x, s_y, d, dim, played, &next)) {
                 break;
             }
             x = next.x;
@@ -218,21 +218,21 @@ static inline int compute_cross_word(size_t  s_x, size_t  s_y, tile_t *to_place,
     return 0;
 }
 
-static inline int apply_scorer(list_t *placed, board_state_unit_t ***played, size_t  accumulated) {
+static inline int apply_scorer(list_t *placed, size_t dim, board_state_unit_t *played[dim][dim], size_t  accumulated) {
     list_t primary;
     list_init(&primary);
     int sum = 0;
     list_iterate(placed, placement, enriched_tile_placement_t, link) {
         list_insert_tail(&primary, &placement->root->link);
         if (!list_empty(&placement->cross)) {
-            sum += compute_score_of(played, &placement->cross, 0);
+            sum += compute_score_of(dim, played, &placement->cross, 0);
         }
     }
-    sum += compute_score_of(played, &primary, accumulated);
+    sum += compute_score_of(dim, played, &primary, accumulated);
     return sum;
 }
 
-static inline int compute_score_of(board_state_unit_t ***played, list_t *placements, size_t sum) {
+static inline int compute_score_of(size_t dim, board_state_unit_t *played[dim][dim], list_t *placements, size_t sum) {
     int word_multiplier = 1;
     int new_tiles = 0;
 
