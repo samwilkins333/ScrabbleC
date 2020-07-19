@@ -20,8 +20,8 @@ extern inline unsigned short trie_add_nodes(trie_t *trie, const char *word) {
             node = trie_node_add_child_to(node, letter, isTerminal);
             trie->node_count++;
         } else {
-            if ((isTerminal = isTerminal && !child_node->isTerminal)) {
-                child_node->isTerminal = 1;
+            if ((isTerminal = isTerminal && !child_node->is_terminal)) {
+                child_node->is_terminal = 1;
             }
             node = child_node;
         }
@@ -46,7 +46,7 @@ extern inline int trie_includes_word(trie_t *self, const char *word) {
         }
         node = child_node;
     }
-    return letter == '\0' && node->isTerminal;
+    return letter == '\0' && node->is_terminal;
 }
 
 extern inline void trie_destroy(trie_t *trie) {
