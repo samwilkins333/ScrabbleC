@@ -1,5 +1,6 @@
 #pragma once
 
-#define DIM 15
+#define DIMENSIONS 15
 #define RACK_CAPACITY 7
 #define DELIMITER '#'
+#define BLANK '{'

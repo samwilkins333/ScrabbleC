@@ -9,13 +9,14 @@ typedef struct tile {
     char letter;
     char letter_proxy;
     int value;
+    char (*resolved_letter)();
     list_link_t link;
 } tile_t;
 
 typedef struct tile_placement {
     int x;
     int y;
-    tile_t tile;
+    tile_t *tile;
     list_link_t link;
 } tile_placement_t;
 
@@ -30,8 +31,8 @@ typedef struct board_state_unit {
 } board_state_unit_t;
 
 typedef struct enriched_tile_placement {
-    tile_placement_t root;
-    list_t *cross;
+    tile_placement_t *root;
+    list_t cross;
     list_link_t link;
 } enriched_tile_placement_t;
 
@@ -61,6 +62,13 @@ extern inline direction_t *inverse(direction_t *direction) {
     return &up;
 }
 
+extern inline direction_t *perpendicular(direction_t *direction) {
+    if (direction == &left || direction == &right) {
+        return &down;
+    }
+    return &right;
+}
+
 extern inline direction_t *normalize(direction_t *direction) {
     if (direction == &left || direction == &right) {
         return &right;
@@ -71,7 +79,7 @@ extern inline direction_t *normalize(direction_t *direction) {
 extern inline int next_coordinates(int x, int y, direction_t *d, coordinates_t *next) {
     int n_x = x + d->x_inc;
     int n_y = y + d->y_inc;
-    if (n_x >= 0 && n_x < DIM && n_y >= 0 && n_y < DIM) {
+    if (n_x >= 0 && n_x < DIMENSIONS && n_y >= 0 && n_y < DIMENSIONS) {
         if (next) {
             next->x = n_x;
             next->y = n_y;
@@ -81,12 +89,12 @@ extern inline int next_coordinates(int x, int y, direction_t *d, coordinates_t *
     return 0;
 }
 
-extern inline int next_tile(int x, int y, direction_t *d, board_state_unit_t played[DIM][DIM], tile_placement_t *out) {
+extern inline int next_tile(int x, int y, direction_t *d, board_state_unit_t ***played, tile_placement_t *out) {
     coordinates_t next;
     tile_t *tile;
-    if (next_coordinates(x, y, d, &next) && (tile = played[next.y][next.x].tile)) {
+    if (next_coordinates(x, y, d, &next) && (tile = played[next.y][next.x]->tile)) {
         if (out) {
-            out->tile = *tile;
+            out->tile = tile;
             out->x = next.x;
             out->y = next.y;
         }

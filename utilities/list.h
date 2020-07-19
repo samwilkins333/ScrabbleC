@@ -92,7 +92,7 @@ void list_remove(list_link_t *link);
             var = __next_ ## var, __next_ ## var = list_next(var, type, member))
 
 #define list_size(size, list, var, type, member)\
-    int size = 0;\
+    size_t size = 0;\
     list_iterate(list, var, type, member) {\
         size++;\
     }\
