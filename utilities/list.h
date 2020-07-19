@@ -54,6 +54,9 @@ typedef struct list {
     struct list *l_prev;
 } list_t, list_link_t;
 
+#define offsetof(type, member) \
+        ((uintptr_t)((char*)&((type *)(0))->member - (char*)0))
+
 void list_link_init(list_link_t *link);
 
 void list_init(list_t *list);
@@ -87,6 +90,12 @@ void list_remove(list_link_t *link);
             *__next_ ## var = list_next(var, type, member);                      \
             &var->member != (list);                                              \
             var = __next_ ## var, __next_ ## var = list_next(var, type, member))
+
+#define list_size(size, list, var, type, member)\
+    int size = 0;\
+    list_iterate(list, var, type, member) {\
+        size++;\
+    }\
 
 
 #define list_iterate_reverse(list, var, type, member)                            \
