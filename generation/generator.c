@@ -2,6 +2,9 @@
 
 trie_node_t *trie_root;
 
+list_t allocated_tile_placements;
+list_t allocated_tiles;
+
 scored_candidate_t **compute_all_candidates(list_t *rack, size_t dim, board_state_unit_t *played[dim][dim], size_t *count) {
     size_t existing_tile_count = 0;
     if (!validate_input(dim, played, rack, &existing_tile_count)) {
@@ -29,20 +32,20 @@ scored_candidate_t **compute_all_candidates(list_t *rack, size_t dim, board_stat
     }
 
     size_t capacity = all.size * sizeof(scored_candidate_t *);
-    scored_candidate_t **collected = malloc(capacity);
-    memset(collected, 0, capacity);
+    scored_candidate_t **candidates = malloc(capacity);
+    memset(candidates, 0, capacity);
     size_t i = 0;
     list_iterate(&all.anchor, candidate, scored_candidate_t, link) {
-        collected[i++] = candidate;
+        candidates[i++] = candidate;
     }
 
-    qsort(collected, all.size, sizeof(scored_candidate_t *), compare_candidates);
+    qsort(candidates, all.size, sizeof(scored_candidate_t *), compare_candidates);
 
     if (count) {
         (*count) = all.size;
     }
 
-    return collected;
+    return candidates;
 }
 
 int compare_candidates(const void *one, const void *two) {
@@ -137,16 +140,19 @@ static inline void try_letter_placement(size_t  h_x, size_t h_y, size_t x, size_
     tile_t *resolved_tile = to_place;
     if (is_blank) {
         memset(resolved_tile = (tile_t *)malloc(sizeof(tile_t)), 0, sizeof(tile_t));
-        memcpy(resolved_tile, to_place, sizeof(tile_t));
+        list_insert_tail(&allocated_tiles, &resolved_tile->cleanup_link);
+        resolved_tile->letter = to_place->letter;
+        resolved_tile->value = to_place->value;
         resolved_tile->letter_proxy = letter;
     }
     trie_node_t *child;
     enriched_tile_placement_t *enriched = (enriched_tile_placement_t *)malloc(sizeof(enriched_tile_placement_t));
     memset(enriched, 0, sizeof(enriched_tile_placement_t));
     list_init(&enriched->cross);
-    if ((child = trie_node_get_child(node, letter)) && compute_cross_word(x, y, to_place, d, dim, played, &enriched->cross)) {
+    if ((child = trie_node_get_child(node, letter)) && compute_cross_word(x, y, resolved_tile, d, dim, played, &enriched->cross)) {
         tile_placement_t *root = (tile_placement_t *)malloc(sizeof(tile_placement_t));
         memset(root, 0, sizeof(tile_placement_t));
+        list_insert_tail(&allocated_tile_placements, &root->cleanup_link);
         root->tile = resolved_tile;
         root->x = x;
         root->y = y;
@@ -225,6 +231,7 @@ static inline int compute_cross_word(size_t  s_x, size_t  s_y, tile_t *to_place,
     while (tile) {
         tile_placement_t *placement = (tile_placement_t *)malloc(sizeof(tile_placement_t));
         memset(placement, 0, sizeof(tile_placement_t));
+        list_insert_tail(&allocated_tile_placements, &placement->cleanup_link);
         placement->x = x;
         placement->y = y;
         placement->tile = tile;

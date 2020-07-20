@@ -13,6 +13,7 @@ typedef struct tile {
     char letter_proxy;
     int value;
     list_link_t link;
+    list_link_t cleanup_link;
 } tile_t;
 
 typedef struct tile_placement {
@@ -20,6 +21,7 @@ typedef struct tile_placement {
     int y;
     tile_t *tile;
     list_link_t link;
+    list_link_t cleanup_link;
 } tile_placement_t;
 
 typedef struct multiplier {

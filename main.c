@@ -5,12 +5,19 @@
 
 extern trie_node_t *trie_root;
 
+extern list_t allocated_tile_placements;
+extern list_t allocated_tiles;
+
 int main() {
     trie_t *trie = construct_trie_from("../ospd4.txt");
     if (!trie) {
         return 1;
     }
+
     trie_root = trie->root;
+    list_init(&allocated_tile_placements);
+    list_init(&allocated_tiles);
+
     list_t rack;
     list_init(&rack);
     multiplier_t multiplier;
@@ -35,8 +42,8 @@ int main() {
         list_insert_tail(&rack, &tile->link);
     }
     size_t count;
-#ifdef LOGGING
     scored_candidate_t **candidates = compute_all_candidates(&rack, DIMENSIONS, played, &count);
+#ifdef LOGGING
     char *word_display = malloc(13 * sizeof(char));
     char *location = malloc(35 * sizeof(char));
     printf("%-13s  score%-3s %-11s <location>\n\n", "word", "", "direction");
@@ -62,11 +69,24 @@ int main() {
     }
     free(word_display);
     free(location);
-#else
-    compute_all_candidates(&rack, DIMENSIONS, played, &count);
 #endif
 
     printf("\nFound %ld candidates.\n", count);
+
+    for (int c = 0; c < count; ++c) {
+        free(candidates[c]->serialized);
+        free(candidates[c]->placements);
+        free(candidates[c]);
+    }
+    free(candidates);
+
+    list_iterate(&allocated_tile_placements.anchor, placement, tile_placement_t, cleanup_link) {
+        free(placement);
+    }
+
+    list_iterate(&allocated_tiles.anchor, tile, tile_t, cleanup_link) {
+        free(tile);
+    }
 
 #ifdef LOGGING
     if (invalid) {
@@ -75,6 +95,18 @@ int main() {
         printf("All words are valid.\n");
     }
 #endif
+
+    for (int y = 0; y < DIMENSIONS; ++y) {
+        for (int x = 0; x < DIMENSIONS; ++x) {
+            free(played[y][x]);
+        }
+    }
+
+    list_iterate(&rack.anchor, tile, tile_t, link) {
+        free(tile);
+    }
+
+    trie_destroy(trie);
 
     return 0;
 }
