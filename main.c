@@ -1,6 +1,8 @@
 #include "vocabulary/trie_factory.h"
 #include "generation/generator.h"
 
+#define LOGGING
+
 extern trie_node_t *trie_root;
 
 int main() {
@@ -33,8 +35,8 @@ int main() {
         list_insert_tail(&rack, &tile->link);
     }
     size_t count;
+#ifdef LOGGING
     scored_candidate_t **candidates = compute_all_candidates(&rack, DIMENSIONS, played, &count);
-
     char *word_display = malloc(13 * sizeof(char));
     char *location = malloc(35 * sizeof(char));
     printf("%-13s  score%-3s %-11s <location>\n\n", "word", "", "direction");
@@ -60,13 +62,19 @@ int main() {
     }
     free(word_display);
     free(location);
+#else
+    compute_all_candidates(&rack, DIMENSIONS, played, &count);
+#endif
 
     printf("\nFound %ld candidates.\n", count);
+
+#ifdef LOGGING
     if (invalid) {
         printf("%ld words were invalid.\n", invalid);
     } else {
         printf("All words are valid.\n");
     }
+#endif
 
     return 0;
 }
