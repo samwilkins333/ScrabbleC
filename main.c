@@ -18,8 +18,7 @@ int main() {
     list_init(&rack);
     char letters[] = "au{sero";
     for (int i = 0; i < RACK_CAPACITY; i++) {
-        tile_t *tile = (tile_t *)malloc(sizeof(tile_t));
-        memset(tile, 0, sizeof(tile_t));
+        NEW(tile_t, tile, 1);
         tile->letter = letters[i];
         tile->value = 1;
         list_insert_tail(&rack, &tile->link);
@@ -32,8 +31,7 @@ int main() {
     board_state_unit_t *played[DIMENSIONS][DIMENSIONS];
     for (int y = 0; y < DIMENSIONS; ++y) {
         for (int x = 0; x < DIMENSIONS; ++x) {
-            board_state_unit_t *unit = malloc(sizeof(board_state_unit_t));
-            memset(unit, 0, sizeof(board_state_unit_t));
+            NEW(board_state_unit_t, unit, 1);
             unit->multiplier = &multiplier;
             unit->tile = NULL;
             played[y][x] = unit;
@@ -44,8 +42,8 @@ int main() {
     generation_result_t *result = generator_compute_all_candidates(&rack, DIMENSIONS, played);
 
 #ifdef LOGGING
-    char *word_display = malloc(13 * sizeof(char));
-    char *location = malloc(35 * sizeof(char));
+    NEW(char, word_display, 13);
+    NEW(char, location, 35);
     printf("%-13s  score%-3s %-11s <location>\n\n", "word", "", "direction");
     size_t invalid = 0;
     for (int c = 0; c < result->count; c++) {

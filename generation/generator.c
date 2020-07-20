@@ -8,8 +8,7 @@ generation_result_t *generator_compute_all_candidates(list_t *rack, size_t dim, 
         return NULL;
     }
 
-    generation_result_t *result = (generation_result_t *)malloc(sizeof(generation_result_t));
-    memset(result, 0, sizeof(generation_result_t));
+    NEW(generation_result_t, result, 1);
     list_init(&result->allocated_tile_placements);
     list_init(&result->allocated_tiles);
 
@@ -33,9 +32,8 @@ generation_result_t *generator_compute_all_candidates(list_t *rack, size_t dim, 
         }
     }
 
-    size_t capacity = all.size * sizeof(scored_candidate_t *);
-    result->candidates = malloc(capacity);
-    memset(result->candidates, 0, capacity);
+    NEW(scored_candidate_t *, candidates, all.size);
+    result->candidates = candidates;
     size_t i = 0;
     list_iterate(&all.anchor, candidate, scored_candidate_t, link) {
         result->candidates[i++] = candidate;
@@ -139,19 +137,18 @@ static inline void try_letter_placement(size_t  h_x, size_t h_y, size_t x, size_
                                         int is_blank, size_t current_placed_count, generation_result_t *result) {
     tile_t *resolved_tile = to_place;
     if (is_blank) {
-        memset(resolved_tile = (tile_t *)malloc(sizeof(tile_t)), 0, sizeof(tile_t));
+        NEW(tile_t, proxied, 1);
+        resolved_tile = proxied;
         list_insert_tail(&result->allocated_tiles, &resolved_tile->result_link);
         resolved_tile->letter = to_place->letter;
         resolved_tile->value = to_place->value;
         resolved_tile->letter_proxy = letter;
     }
     trie_node_t *child;
-    enriched_tile_placement_t *enriched = (enriched_tile_placement_t *)malloc(sizeof(enriched_tile_placement_t));
-    memset(enriched, 0, sizeof(enriched_tile_placement_t));
+    NEW(enriched_tile_placement_t, enriched, 1);
     list_init(&enriched->cross);
     if ((child = trie_node_get_child(node, letter)) && compute_cross_word(x, y, resolved_tile, d, dim, played, &enriched->cross, result)) {
-        tile_placement_t *root = (tile_placement_t *)malloc(sizeof(tile_placement_t));
-        memset(root, 0, sizeof(tile_placement_t));
+        NEW(tile_placement_t, root, 1);
         list_insert_tail(&result->allocated_tile_placements, &root->result_link);
         root->tile = resolved_tile;
         root->x = x;
@@ -180,13 +177,11 @@ static inline void evaluate_and_proceed(size_t  h_x, size_t h_y, size_t x, size_
     if (node->is_terminal && !next_tile(x, y, d, dim, played, NULL)) {
         if (d == &left || d == &up || !next_tile(h_x, h_y, i, dim, played, NULL)) {
             if ((total_score = apply_scorer(placed, dim, played, accumulated))) {
-                scored_candidate_t *candidate = (scored_candidate_t *)malloc(sizeof(scored_candidate_t));
-                memset(candidate, 0, sizeof(scored_candidate_t));
+                NEW(scored_candidate_t, candidate, 1);
                 candidate->direction = normalize(d);
                 candidate->score = total_score;
-                size_t capacity = placed->size * sizeof(tile_placement_t *);
-                candidate->placements = (tile_placement_t **)malloc(capacity);
-                memset(candidate->placements, 0, capacity);
+                NEW(tile_placement_t *, p, placed->size)
+                candidate->placements = p;
                 candidate->placements_count = placed->size;
                 size_t j = 0;
                 list_iterate(&placed->anchor, enriched, enriched_tile_placement_t, link) {
@@ -194,9 +189,8 @@ static inline void evaluate_and_proceed(size_t  h_x, size_t h_y, size_t x, size_
                 }
                 int (*compare)(const void *, const void *) = candidate->direction == &right ? compare_x : compare_y;
                 qsort(candidate->placements, placed->size, sizeof(tile_placement_t *), compare);
-                size_t str_len = (placed->size + 1) * sizeof(char);
-                candidate->serialized = malloc(str_len);
-                memset(candidate->serialized, 0, str_len);
+                NEW(char, serialized, (placed->size + 1));
+                candidate->serialized = serialized;
                 for (int k = 0; k < placed->size; ++k) {
                     tile_t *tile =  candidate->placements[k]->tile;
                     sprintf(candidate->serialized, "%s%c", candidate->serialized, tile->letter_proxy ? tile->letter_proxy : tile->letter);
@@ -229,8 +223,7 @@ static inline int compute_cross_word(size_t  s_x, size_t  s_y, tile_t *to_place,
     list_init(&temporary);
 
     while (tile) {
-        tile_placement_t *placement = (tile_placement_t *)malloc(sizeof(tile_placement_t));
-        memset(placement, 0, sizeof(tile_placement_t));
+        NEW(tile_placement_t, placement, 1);
         list_insert_tail(&result->allocated_tile_placements, &placement->result_link);
         placement->x = x;
         placement->y = y;

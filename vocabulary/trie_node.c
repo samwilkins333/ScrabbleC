@@ -1,8 +1,8 @@
 #include "trie_node.h"
+#include "../generation/configuration.h"
 
 inline trie_node_t *trie_node_add_child_to(trie_node_t *node, char letter, unsigned short is_terminal) {
-    trie_node_t *child = (trie_node_t *)malloc(sizeof(trie_node_t));
-    memset(child, 0, sizeof(trie_node_t));
+    NEW(trie_node_t, child, 1);
     child->letter = letter;
     child->is_terminal = is_terminal;
     if ((child->parent = node) != 0) {

@@ -2,8 +2,7 @@
 #include "../generation/configuration.h"
 
 inline trie_t *trie_initialize() {
-    trie_t *trie = (trie_t *)malloc(sizeof(trie_t));
-    memset(trie, 0, sizeof(trie_t));
+    NEW(trie_t, trie, 1);
     trie->root = trie_node_add_child_to(NULL, '@', 0);
     trie->word_count = 0;
     trie->node_count = 0;
@@ -38,9 +37,7 @@ inline void trie_add_word(trie_t *self, const char *word) {
     size_t length = strlen(word);
     if (length > 1) {
         size_t current_index = length - 1;
-        size_t variation_size = length + 2 * sizeof(char);
-        char *variation = (char *)malloc(variation_size);
-        memset(variation, 0, variation_size);
+        NEW(char, variation, (length + 2));
         for (int i = 0; i < current_index; ++i) {
             variation[i] = word[i + 1];
         }
