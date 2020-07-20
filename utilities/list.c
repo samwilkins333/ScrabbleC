@@ -6,14 +6,6 @@ inline void list_init(list_t *list) {
     list->size = 0;
 }
 
-inline void list_link_init(list_link_t *link) {
-    link->l_next = link->l_prev = NULL;
-}
-
-inline long list_link_is_linked(const list_link_t *link) {
-    return link->l_next && link->l_prev;
-}
-
 inline long list_empty(const list_t *list) {
     return list->size == 0;
 }

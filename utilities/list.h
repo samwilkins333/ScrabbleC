@@ -13,11 +13,7 @@ typedef struct list {
 #define offsetof(type, member) \
         ((uintptr_t)((char*)&((type *)(0))->member - (char*)0))
 
-void list_link_init(list_link_t *link);
-
 void list_init(list_t *list);
-
-long list_link_is_linked(const list_link_t *link);
 
 long list_empty(const list_t *list);
 
@@ -34,7 +30,6 @@ void list_remove(list_t *list, list_link_t *link);
         list_item((list)->l_next, type, member)
 
 #define list_next(current, type, member) list_head(&(current)->member, type, member)
-#define list_prev(current, type, member) list_tail(&(current)->member, type, member)
 
 #define list_tail(list, type, member)                                   \
         list_item((list)->l_prev, type, member)
