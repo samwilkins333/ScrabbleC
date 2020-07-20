@@ -67,21 +67,21 @@ int main() {
         }
         printf("%-13s  %-7d  %-10s  %s\n", word_display, candidate->score, candidate->direction->name, location);
     }
-    printf("\nFound %ld candidates.\n", result->count);
+
     free(word_display);
     free(location);
-#endif
 
-    // clean up candidates
-    generator_clean_up(result);
+    printf("\nFound %ld candidates.\n", result->count);
 
-#ifdef LOGGING
     if (invalid) {
         printf("%ld words were invalid.\n", invalid);
     } else {
         printf("All words are valid.\n");
     }
 #endif
+
+    // clean up candidates
+    generator_clean_up(result);
 
     // clean up board
     for (int y = 0; y < DIMENSIONS; ++y) {
