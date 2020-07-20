@@ -65,5 +65,6 @@ typedef struct scored_candidate {
     size_t placements_count;
     int score;
     direction_t *direction;
+    char *serialized;
     list_link_t link;
 } scored_candidate_t;

@@ -23,3 +23,11 @@ static inline void try_letter_placement(size_t  h_x, size_t  h_y, size_t  x, siz
 static inline int compute_cross_word(size_t  s_x, size_t  s_y, tile_t *to_place, direction_t *d, size_t dim, board_state_unit_t *played[dim][dim], list_t *collector);
 static inline int apply_scorer(list_t *placed, size_t dim, board_state_unit_t *played[dim][dim], size_t  accumulated);
 static inline int compute_score_of(size_t dim, board_state_unit_t *played[dim][dim], list_t *placements, size_t  sum);
+
+static inline int compare_x(const void *one, const void *two) {
+    return (*((tile_placement_t **)one))->x - (*((tile_placement_t **)two))->x;
+}
+
+static inline int compare_y(const void *one, const void *two) {
+    return (*((tile_placement_t **)one))->y - (*((tile_placement_t **)two))->y;
+}

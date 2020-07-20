@@ -1,6 +1,6 @@
 #include "models.h"
 
-direction_t left = { "left" -1, 0 };
+direction_t left = { "left", -1, 0 };
 direction_t right = { "right", 1, 0 };
 direction_t up = { "up", 0, -1 };
 direction_t down = { "down", 0, 1 };

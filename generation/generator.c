@@ -28,7 +28,9 @@ scored_candidate_t **compute_all_candidates(list_t *rack, size_t dim, board_stat
         }
     }
 
-    scored_candidate_t **collected = malloc(all.size * sizeof(scored_candidate_t *));
+    size_t capacity = all.size * sizeof(scored_candidate_t *);
+    scored_candidate_t **collected = malloc(capacity);
+    memset(collected, 0, capacity);
     size_t i = 0;
     list_iterate(&all.anchor, candidate, scored_candidate_t, link) {
         collected[i++] = candidate;
@@ -44,7 +46,17 @@ scored_candidate_t **compute_all_candidates(list_t *rack, size_t dim, board_stat
 }
 
 int compare_candidates(const void *one, const void *two) {
-    return (*(scored_candidate_t **)two)->score - (*(scored_candidate_t **)one)->score;
+    scored_candidate_t *c_one = *(scored_candidate_t **)one;
+    scored_candidate_t *c_two = *(scored_candidate_t **)two;
+    int score_diff = c_two->score - c_one->score;
+    if (score_diff) {
+        return score_diff;
+    }
+    int alpha_diff = strcmp(c_one->serialized, c_two->serialized);
+    if (alpha_diff) {
+        return alpha_diff;
+    }
+    return strcmp(c_two->direction->name, c_one->direction->name);
 }
 
 void generate_at_hook(int x, int y, list_t *rack, list_t *all, size_t dim, board_state_unit_t *played[dim][dim]) {
@@ -94,14 +106,14 @@ static inline void generate(size_t h_x, size_t h_y, size_t x, size_t y, list_t *
                 tile_t *to_place = list_head(&rack->anchor, tile_t, link);
                 list_remove(rack, &to_place->link);
                 char letter = to_place->letter;
-                if (!visited[letter  - 97]) {
+                if (!visited[letter - 97]) {
                     visited[letter - 97] = 1;
                     if (letter == BLANK) {
                         for (int l = 0; l < 26; ++l) {
-                            try_letter_placement(h_x, h_x, x, y, rack, placed, accumulated, all, node, d, dim, played, to_place, alphabet[l], 1, current_placed_count);
+                            try_letter_placement(h_x, h_y, x, y, rack, placed, accumulated, all, node, d, dim, played, to_place, alphabet[l], 1, current_placed_count);
                         }
                     } else {
-                        try_letter_placement(h_x, h_x, x, y, rack, placed, accumulated, all, node, d, dim, played, to_place, letter, 0, current_placed_count);
+                        try_letter_placement(h_x, h_y, x, y, rack, placed, accumulated, all, node, d, dim, played, to_place, letter, 0, current_placed_count);
                     }
                 }
                 list_insert_tail(rack, &to_place->link);
@@ -162,17 +174,28 @@ static inline void evaluate_and_proceed(size_t  h_x, size_t h_y, size_t x, size_
     if (node->is_terminal && !next_tile(x, y, d, dim, played, NULL)) {
         if (d == &left || d == &up || !next_tile(h_x, h_y, i, dim, played, NULL)) {
             if ((total_score = apply_scorer(placed, dim, played, accumulated))) {
-                scored_candidate_t *scored_candidate = (scored_candidate_t *)malloc(sizeof(scored_candidate_t));
-                memset(scored_candidate, 0, sizeof(scored_candidate_t));
-                scored_candidate->direction = normalize(d);
-                scored_candidate->score = total_score;
-                scored_candidate->placements = (tile_placement_t **)malloc(placed->size * sizeof(tile_placement_t *));
-                scored_candidate->placements_count = placed->size;
+                scored_candidate_t *candidate = (scored_candidate_t *)malloc(sizeof(scored_candidate_t));
+                memset(candidate, 0, sizeof(scored_candidate_t));
+                candidate->direction = normalize(d);
+                candidate->score = total_score;
+                size_t capacity = placed->size * sizeof(tile_placement_t *);
+                candidate->placements = (tile_placement_t **)malloc(capacity);
+                memset(candidate->placements, 0, capacity);
+                candidate->placements_count = placed->size;
                 size_t j = 0;
                 list_iterate(&placed->anchor, enriched, enriched_tile_placement_t, link) {
-                    scored_candidate->placements[j++] = enriched->root;
+                    candidate->placements[j++] = enriched->root;
                 }
-                list_insert_tail(all, &scored_candidate->link);
+                int (*compare)(const void *, const void *) = candidate->direction == &right ? compare_x : compare_y;
+                qsort(candidate->placements, placed->size, sizeof(tile_placement_t *), compare);
+                size_t str_len = (placed->size + 1) * sizeof(char);
+                candidate->serialized = malloc(str_len);
+                memset(candidate->serialized, 0, str_len);
+                for (int k = 0; k < placed->size; ++k) {
+                    tile_t *tile =  candidate->placements[k]->tile;
+                    sprintf(candidate->serialized, "%s%c", candidate->serialized, tile->letter_proxy ? tile->letter_proxy : tile->letter);
+                }
+                list_insert_tail(all, &candidate->link);
             }
         }
     }

@@ -24,7 +24,7 @@ int main() {
             played[y][x] = unit;
         }
     }
-    char letters[] = "{gofj{p";
+    char letters[] = "au{sero";
     for (int i = 0; i < RACK_CAPACITY; i++) {
         tile_t *tile = (tile_t *)malloc(sizeof(tile_t));
         memset(tile, 0, sizeof(tile_t));
@@ -34,18 +34,39 @@ int main() {
     }
     size_t count;
     scored_candidate_t **candidates = compute_all_candidates(&rack, DIMENSIONS, played, &count);
-    printf("Found %ld candidates.\n", count);
-    char *output = malloc(7 * sizeof(char));
+
+    char *word_display = malloc(13 * sizeof(char));
+    char *location = malloc(35 * sizeof(char));
+    printf("%-13s  score%-3s %-11s <location>\n\n", "word", "", "direction");
+    size_t invalid = 0;
     for (int c = 0; c < count; c++) {
         scored_candidate_t *candidate = candidates[c];
-        memset(output, 0, 7);
+        memset(word_display, 0, 13);
+        memset(location, 0, 35);
         for (int i = 0; i < candidate->placements_count; i++) {
-            tile_t *tile = candidate->placements[i]->tile;
-            sprintf(output, "%s%c", output, tile->letter_proxy ? tile->letter_proxy : tile->letter);
+            tile_placement_t *placement = candidate->placements[i];
+            tile_t *tile = placement->tile;
+            if (tile->letter_proxy) {
+                sprintf(word_display, "%s(%c*)", word_display, tile->letter_proxy);
+            } else {
+                sprintf(word_display, "%s%c", word_display, tile->letter);
+            }
+            sprintf(location, "%s(%d,%d)", location, placement->x, placement->y);
         }
-        printf("%s [%d] %s\n", output, candidate->score, candidate->direction->name);
+        if (!trie_includes_word(trie, candidate->serialized)) {
+            invalid++;
+        }
+        printf("%-13s  %-7d  %-10s  %s\n", word_display, candidate->score, candidate->direction->name, location);
     }
-    free(output);
+    free(word_display);
+    free(location);
+
+    printf("\nFound %ld candidates.\n", count);
+    if (invalid) {
+        printf("%ld words were invalid.\n", invalid);
+    } else {
+        printf("All words are valid.\n");
+    }
 
     return 0;
 }
