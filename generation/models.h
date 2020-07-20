@@ -13,7 +13,7 @@ typedef struct tile {
     char letter_proxy;
     int value;
     list_link_t link;
-    list_link_t cleanup_link;
+    list_link_t result_link;
 } tile_t;
 
 typedef struct tile_placement {
@@ -21,7 +21,7 @@ typedef struct tile_placement {
     int y;
     tile_t *tile;
     list_link_t link;
-    list_link_t cleanup_link;
+    list_link_t result_link;
 } tile_placement_t;
 
 typedef struct multiplier {
@@ -70,3 +70,10 @@ typedef struct scored_candidate {
     char *serialized;
     list_link_t link;
 } scored_candidate_t;
+
+typedef struct generation_result {
+    scored_candidate_t **candidates;
+    size_t count;
+    list_t allocated_tile_placements;
+    list_t allocated_tiles;
+} generation_result_t;

@@ -5,21 +5,27 @@
 
 extern trie_node_t *trie_root;
 
-extern list_t allocated_tile_placements;
-extern list_t allocated_tiles;
-
 int main() {
+    // initialize trie
     trie_t *trie = construct_trie_from("../ospd4.txt");
     if (!trie) {
         return 1;
     }
-
     trie_root = trie->root;
-    list_init(&allocated_tile_placements);
-    list_init(&allocated_tiles);
 
+    // initialize rack
     list_t rack;
     list_init(&rack);
+    char letters[] = "au{sero";
+    for (int i = 0; i < RACK_CAPACITY; i++) {
+        tile_t *tile = (tile_t *)malloc(sizeof(tile_t));
+        memset(tile, 0, sizeof(tile_t));
+        tile->letter = letters[i];
+        tile->value = 1;
+        list_insert_tail(&rack, &tile->link);
+    }
+
+    // initialize board
     multiplier_t multiplier;
     multiplier.letter = 1;
     multiplier.word = 1;
@@ -33,23 +39,17 @@ int main() {
             played[y][x] = unit;
         }
     }
-    char letters[] = "au{sero";
-    for (int i = 0; i < RACK_CAPACITY; i++) {
-        tile_t *tile = (tile_t *)malloc(sizeof(tile_t));
-        memset(tile, 0, sizeof(tile_t));
-        tile->letter = letters[i];
-        tile->value = 1;
-        list_insert_tail(&rack, &tile->link);
-    }
-    size_t count;
-    scored_candidate_t **candidates = compute_all_candidates(&rack, DIMENSIONS, played, &count);
+
+    // generate candidates
+    generation_result_t *result = generator_compute_all_candidates(&rack, DIMENSIONS, played);
+
 #ifdef LOGGING
     char *word_display = malloc(13 * sizeof(char));
     char *location = malloc(35 * sizeof(char));
     printf("%-13s  score%-3s %-11s <location>\n\n", "word", "", "direction");
     size_t invalid = 0;
-    for (int c = 0; c < count; c++) {
-        scored_candidate_t *candidate = candidates[c];
+    for (int c = 0; c < result->count; c++) {
+        scored_candidate_t *candidate = result->candidates[c];
         memset(word_display, 0, 13);
         memset(location, 0, 35);
         for (int i = 0; i < candidate->placements_count; i++) {
@@ -67,26 +67,13 @@ int main() {
         }
         printf("%-13s  %-7d  %-10s  %s\n", word_display, candidate->score, candidate->direction->name, location);
     }
+    printf("\nFound %ld candidates.\n", result->count);
     free(word_display);
     free(location);
 #endif
 
-    printf("\nFound %ld candidates.\n", count);
-
-    for (int c = 0; c < count; ++c) {
-        free(candidates[c]->serialized);
-        free(candidates[c]->placements);
-        free(candidates[c]);
-    }
-    free(candidates);
-
-    list_iterate(&allocated_tile_placements.anchor, placement, tile_placement_t, cleanup_link) {
-        free(placement);
-    }
-
-    list_iterate(&allocated_tiles.anchor, tile, tile_t, cleanup_link) {
-        free(tile);
-    }
+    // clean up candidates
+    generator_clean_up(result);
 
 #ifdef LOGGING
     if (invalid) {
@@ -96,16 +83,19 @@ int main() {
     }
 #endif
 
+    // clean up board
     for (int y = 0; y < DIMENSIONS; ++y) {
         for (int x = 0; x < DIMENSIONS; ++x) {
             free(played[y][x]);
         }
     }
 
+    // clean up rack
     list_iterate(&rack.anchor, tile, tile_t, link) {
         free(tile);
     }
 
+    // clean up trie
     trie_destroy(trie);
 
     return 0;
