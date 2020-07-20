@@ -12,7 +12,6 @@ typedef struct tile {
     char letter;
     char letter_proxy;
     int value;
-    char (*resolved_letter)();
     list_link_t link;
 } tile_t;
 
@@ -62,7 +61,8 @@ int next_coordinates(int x, int y, direction_t *d, coordinates_t *next);
 int next_tile(int x, int y, direction_t *d, size_t dim, board_state_unit_t *played[dim][dim], tile_placement_t *out);
 
 typedef struct scored_candidate {
-    list_t placements;
+    tile_placement_t **placements;
+    size_t placements_count;
     int score;
     direction_t *direction;
     list_link_t link;

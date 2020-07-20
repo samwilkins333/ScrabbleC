@@ -8,7 +8,8 @@
 
 static char alphabet[] = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '{' };
 
-int computeAllCandidates(list_t *rack, size_t dim, board_state_unit_t *played[dim][dim], list_t *all) ;
+scored_candidate_t **compute_all_candidates(list_t *rack, size_t dim, board_state_unit_t *played[dim][dim], size_t *count);
+int compare_candidates(const void *one, const void *two);
 int validate_input(size_t dim, board_state_unit_t *played[dim][dim], list_t *rack, size_t *existing_tile_count);
 void generate_at_hook(int x, int y, list_t *rack, list_t *all, size_t dim, board_state_unit_t *played[dim][dim]);
 static void generate(size_t h_x, size_t  h_y, size_t  x, size_t  y, list_t *rack, list_t *placed,

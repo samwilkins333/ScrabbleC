@@ -2,23 +2,24 @@
 
 trie_node_t *trie_root;
 
-int computeAllCandidates(list_t *rack, size_t dim, board_state_unit_t *played[dim][dim], list_t *all) {
+scored_candidate_t **compute_all_candidates(list_t *rack, size_t dim, board_state_unit_t *played[dim][dim], size_t *count) {
     size_t existing_tile_count = 0;
     if (!validate_input(dim, played, rack, &existing_tile_count)) {
-        return 0;
+        return NULL;
     }
 
-    list_size(rack_size, rack, r, tile_t, link)
-    if (rack_size) {
+    list_t all;
+    list_init(&all);
+    if (rack->size) {
         if (!existing_tile_count) {
             size_t midpoint = dim / 2;
-            generate_at_hook(midpoint, midpoint, rack, all, dim, played);
+            generate_at_hook(midpoint, midpoint, rack, &all, dim, played);
         } else {
             for (int y = 0; y < DIMENSIONS; y++) {
                 for (int x = 0; x < DIMENSIONS; x++) {
                     for (int i = 0; i < 4; ++i) {
                         if (next_tile(x, y, all_directions[i], dim, played, NULL)) {
-                            generate_at_hook(x, y, rack, all, dim, played);
+                            generate_at_hook(x, y, rack, &all, dim, played);
                             break;
                         }
                     }
@@ -27,7 +28,23 @@ int computeAllCandidates(list_t *rack, size_t dim, board_state_unit_t *played[di
         }
     }
 
-    return 1;
+    scored_candidate_t **collected = malloc(all.size * sizeof(scored_candidate_t *));
+    size_t i = 0;
+    list_iterate(&all.anchor, candidate, scored_candidate_t, link) {
+        collected[i++] = candidate;
+    }
+
+    qsort(collected, all.size, sizeof(scored_candidate_t *), compare_candidates);
+
+    if (count) {
+        (*count) = all.size;
+    }
+
+    return collected;
+}
+
+int compare_candidates(const void *one, const void *two) {
+    return (*(scored_candidate_t **)two)->score - (*(scored_candidate_t **)one)->score;
 }
 
 void generate_at_hook(int x, int y, list_t *rack, list_t *all, size_t dim, board_state_unit_t *played[dim][dim]) {
@@ -55,8 +72,7 @@ int validate_input(size_t dim, board_state_unit_t *played[dim][dim], list_t *rac
             }
         }
     }
-    list_size(rack_size, rack, r, tile_t, link)
-    if (rack_size > RACK_CAPACITY) {
+    if (rack->size > RACK_CAPACITY) {
         return 0;
     }
     return 1;
@@ -69,15 +85,14 @@ static inline void generate(size_t h_x, size_t h_y, size_t x, size_t y, list_t *
     trie_node_t *child_node;
 
     if (!tile) {
-        list_size(current_placed_count, placed, p, enriched_tile_placement_t, link)
-        list_size(rack_count, rack, r, tile_t, link)
-
+        size_t current_placed_count = placed->size;
+        size_t rack_count = rack->size;
         if (rack_count) {
             int visited[27];
             memset(&visited, 0, sizeof(visited));
             for (int r = 0; r < rack_count; ++r) {
-                tile_t *to_place = list_head(rack, tile_t, link);
-                list_remove(&to_place->link);
+                tile_t *to_place = list_head(&rack->anchor, tile_t, link);
+                list_remove(rack, &to_place->link);
                 char letter = to_place->letter;
                 if (!visited[letter  - 97]) {
                     visited[letter - 97] = 1;
@@ -98,7 +113,7 @@ static inline void generate(size_t h_x, size_t h_y, size_t x, size_t y, list_t *
         if (current_placed_count && (cross_anchor = trie_node_get_child(node, DELIMITER)) && next_coordinates(h_x, h_y, i, &next)) {
             generate(h_x, h_y, next.x, next.y, rack, placed, accumulated, all, cross_anchor, i, dim, played);
         }
-    } else if (node && (child_node = trie_node_get_child(node, tile->resolved_letter()))) {
+    } else if (node && (child_node = trie_node_get_child(node, (char)(tile->letter_proxy ? tile->letter_proxy : tile->letter)))) {
         evaluate_and_proceed(h_x, h_y, x, y, rack, placed, accumulated + tile->value, all, child_node, d, dim, played);
     }
 }
@@ -127,12 +142,11 @@ static inline void try_letter_placement(size_t  h_x, size_t h_y, size_t x, size_
         list_insert_tail(placed, &enriched->link);
         evaluate_and_proceed(h_x, h_y, x, y, rack, placed, accumulated, all, child, d, dim, played);
         while (1) {
-            list_size(size, placed, p, enriched_tile_placement_t, link)
-            if (size == current_placed_count) {
+            if (placed->size == current_placed_count) {
                 break;
             }
-            enriched_tile_placement_t *to_remove = list_tail(placed, enriched_tile_placement_t, link);
-            list_remove(&to_remove->link);
+            enriched_tile_placement_t *to_remove = list_tail(&placed->anchor, enriched_tile_placement_t, link);
+            list_remove(placed, &to_remove->link);
             free(to_remove);
         }
     } else {
@@ -152,9 +166,11 @@ static inline void evaluate_and_proceed(size_t  h_x, size_t h_y, size_t x, size_
                 memset(scored_candidate, 0, sizeof(scored_candidate_t));
                 scored_candidate->direction = normalize(d);
                 scored_candidate->score = total_score;
-                list_init(&scored_candidate->placements);
-                list_iterate(placed, enriched, enriched_tile_placement_t, link) {
-                    list_insert_tail(&scored_candidate->placements, &enriched->root->link);
+                scored_candidate->placements = (tile_placement_t **)malloc(placed->size * sizeof(tile_placement_t *));
+                scored_candidate->placements_count = placed->size;
+                size_t j = 0;
+                list_iterate(&placed->anchor, enriched, enriched_tile_placement_t, link) {
+                    scored_candidate->placements[j++] = enriched->root;
                 }
                 list_insert_tail(all, &scored_candidate->link);
             }
@@ -190,7 +206,7 @@ static inline int compute_cross_word(size_t  s_x, size_t  s_y, tile_t *to_place,
         placement->y = y;
         placement->tile = tile;
         list_insert_tail(&temporary, &placement->link);
-        if (!(node = trie_node_get_child(node, tile->resolved_letter()))) {
+        if (!(node = trie_node_get_child(node, (char)(tile->letter_proxy ? tile->letter_proxy : tile->letter)))) {
             break;
         }
         tile_placement_t next;
@@ -213,8 +229,8 @@ static inline int compute_cross_word(size_t  s_x, size_t  s_y, tile_t *to_place,
     }
 
     if (node && node->is_terminal) {
-        list_iterate(&temporary, placement, tile_placement_t, link) {
-            list_remove(&placement->link);
+        list_iterate(&temporary.anchor, placement, tile_placement_t, link) {
+            list_remove(&temporary, &placement->link);
             list_insert_tail(collector, &placement->link);
         }
         return 1;
@@ -226,7 +242,7 @@ static inline int apply_scorer(list_t *placed, size_t dim, board_state_unit_t *p
     list_t primary;
     list_init(&primary);
     int sum = 0;
-    list_iterate(placed, placement, enriched_tile_placement_t, link) {
+    list_iterate(&placed->anchor, placement, enriched_tile_placement_t, link) {
         list_insert_tail(&primary, &placement->root->link);
         if (!list_empty(&placement->cross)) {
             sum += compute_score_of(dim, played, &placement->cross, 0);
@@ -240,7 +256,7 @@ static inline int compute_score_of(size_t dim, board_state_unit_t *played[dim][d
     int word_multiplier = 1;
     int new_tiles = 0;
 
-    list_iterate(placements, placement, tile_placement_t, link) {
+    list_iterate(&placements->anchor, placement, tile_placement_t, link) {
         tile_t *tile = placement->tile;
         board_state_unit_t *state = played[placement->y][placement->x];
         if (!state->tile) {

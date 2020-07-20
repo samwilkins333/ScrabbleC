@@ -2,7 +2,8 @@
 #include "list.h"
 
 inline void list_init(list_t *list) {
-    list->l_next = list->l_prev = list;
+    list->anchor.l_next = list->anchor.l_prev = &list->anchor;
+    list->size = 0;
 }
 
 inline void list_link_init(list_link_t *link) {
@@ -14,7 +15,7 @@ inline long list_link_is_linked(const list_link_t *link) {
 }
 
 inline long list_empty(const list_t *list) {
-    return list->l_next == list;
+    return list->size == 0;
 }
 
 inline void list_insert_before(list_link_t *link, list_link_t *to_insert) {
@@ -26,19 +27,17 @@ inline void list_insert_before(list_link_t *link, list_link_t *to_insert) {
     next->l_prev = prev;
 }
 
-inline void list_insert_head(list_t *list, list_link_t *link) {
-    list_insert_before((list)->l_next, link);
-}
-
 inline void list_insert_tail(list_t *list, list_link_t *link) {
-    list_insert_before(list, link);
+    list_insert_before(&list->anchor, link);
+    list->size++;
 }
 
-inline void list_remove(list_link_t *link) {
+inline void list_remove(list_t *list, list_link_t *link) {
     list_link_t *ll = link;
     list_link_t *prev = ll->l_prev;
     list_link_t *next = ll->l_next;
     prev->l_next = next;
     next->l_prev = prev;
     ll->l_next = ll->l_prev = NULL;
+    list->size--;
 }

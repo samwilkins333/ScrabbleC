@@ -9,9 +9,8 @@ int main() {
         return 1;
     }
     trie_root = trie->root;
-    list_t rack, all;
+    list_t rack;
     list_init(&rack);
-    list_init(&all);
     multiplier_t multiplier;
     multiplier.letter = 1;
     multiplier.word = 1;
@@ -25,23 +24,28 @@ int main() {
             played[y][x] = unit;
         }
     }
-    for (int i = 0; i < RACK_CAPACITY; ++i) {
+    char letters[] = "{gofj{p";
+    for (int i = 0; i < RACK_CAPACITY; i++) {
         tile_t *tile = (tile_t *)malloc(sizeof(tile_t));
         memset(tile, 0, sizeof(tile_t));
-        tile->letter = 'a';
+        tile->letter = letters[i];
         tile->value = 1;
         list_insert_tail(&rack, &tile->link);
     }
-    computeAllCandidates(&rack, DIMENSIONS, played, &all);
-//    char *output = malloc(1024 * sizeof(char));
-    list_iterate(&all, candidate, scored_candidate_t, link) {
-//        memset(output, 0, 1024);
-        list_iterate(&candidate->placements, placement, tile_placement_t, link) {
-            printf("%c\n", placement->tile->letter);
-//            sprintf(output, "%s%c", output, placement->tile->letter);
+    size_t count;
+    scored_candidate_t **candidates = compute_all_candidates(&rack, DIMENSIONS, played, &count);
+    printf("Found %ld candidates.\n", count);
+    char *output = malloc(7 * sizeof(char));
+    for (int c = 0; c < count; c++) {
+        scored_candidate_t *candidate = candidates[c];
+        memset(output, 0, 7);
+        for (int i = 0; i < candidate->placements_count; i++) {
+            tile_t *tile = candidate->placements[i]->tile;
+            sprintf(output, "%s%c", output, tile->letter_proxy ? tile->letter_proxy : tile->letter);
         }
-        printf("%d (%s) %c\n", candidate->score, candidate->direction->name);
+        printf("%s [%d] %s\n", output, candidate->score, candidate->direction->name);
     }
-//    free(output);
+    free(output);
+
     return 0;
 }
