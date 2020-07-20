@@ -1,6 +1,8 @@
 #include "trie_node.h"
 #include "../generation/configuration.h"
 
+extern int allocations;
+
 inline trie_node_t *trie_node_add_child_to(trie_node_t *node, char letter, unsigned short is_terminal) {
     NEW(trie_node_t, child, 1);
     child->letter = letter;
@@ -23,6 +25,6 @@ inline void trie_node_destroy(trie_node_t *node) {
         if (node->parent) {
             node->parent->children[node->letter - 97] = NULL;
         }
-        free(node);
+        DONE(node);
     }
 }

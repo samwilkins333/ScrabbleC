@@ -4,6 +4,7 @@
 #define LOGGING
 
 extern trie_node_t *trie_root;
+int allocations = 0;
 
 int main() {
     // initialize trie
@@ -66,8 +67,8 @@ int main() {
         printf("%-13s  %-7d  %-10s  %s\n", word_display, candidate->score, candidate->direction->name, location);
     }
 
-    free(word_display);
-    free(location);
+    DONE(word_display);
+    DONE(location);
 
     printf("\nFound %ld candidates.\n", result->count);
 
@@ -84,17 +85,22 @@ int main() {
     // clean up board
     for (int y = 0; y < DIMENSIONS; ++y) {
         for (int x = 0; x < DIMENSIONS; ++x) {
-            free(played[y][x]);
+            DONE(played[y][x]);
         }
     }
 
     // clean up rack
     list_iterate(&rack.anchor, tile, tile_t, link) {
-        free(tile);
+        DONE(tile);
     }
 
     // clean up trie
     trie_destroy(trie);
+
+    if (allocations) {
+        printf("\nMemory leak: %d allocations remaining.\n", allocations);
+        return 1;
+    }
 
     return 0;
 }

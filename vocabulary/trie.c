@@ -1,6 +1,8 @@
 #include "trie.h"
 #include "../generation/configuration.h"
 
+extern int allocations;
+
 inline trie_t *trie_initialize() {
     NEW(trie_t, trie, 1);
     trie->root = trie_node_add_child_to(NULL, '@', 0);
@@ -51,7 +53,7 @@ inline void trie_add_word(trie_t *self, const char *word) {
             }
             variation[current_index] = DELIMITER;
         }
-        free(variation);
+        DONE(variation);
     }
 }
 
@@ -71,5 +73,5 @@ inline int trie_includes_word(trie_t *self, const char *word) {
 
 inline void trie_destroy(trie_t *trie) {
     trie_node_destroy(trie->root);
-    free(trie);
+    DONE(trie);
 }

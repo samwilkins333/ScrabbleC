@@ -1,6 +1,7 @@
 #include "generator.h"
 
 trie_node_t *trie_root;
+extern int allocations;
 
 generation_result_t *generator_compute_all_candidates(list_t *rack, size_t dim, board_state_unit_t *played[dim][dim]) {
     size_t existing_tile_count = 0;
@@ -162,10 +163,10 @@ static inline void try_letter_placement(size_t  h_x, size_t h_y, size_t x, size_
             }
             enriched_tile_placement_t *to_remove = list_tail(&placed->anchor, enriched_tile_placement_t, link);
             list_remove(placed, &to_remove->link);
-            free(to_remove);
+            DONE(to_remove);
         }
     } else {
-        free(enriched);
+        DONE(enriched);
     }
 }
 
@@ -304,19 +305,19 @@ static inline int compute_score_of(size_t dim, board_state_unit_t *played[dim][d
 void generator_clean_up(generation_result_t *result) {
     for (int c = 0; c < result->count; ++c) {
         scored_candidate_t *candidate = result->candidates[c];
-        free(candidate->serialized);
-        free(candidate->placements);
-        free(candidate);
+        DONE(candidate->serialized);
+        DONE(candidate->placements);
+        DONE(candidate);
     }
-    free(result->candidates);
+    DONE(result->candidates);
 
     list_iterate(&result->allocated_tile_placements.anchor, placement, tile_placement_t, result_link) {
-        free(placement);
+        DONE(placement);
     }
 
     list_iterate(&result->allocated_tiles.anchor, tile, tile_t, result_link) {
-        free(tile);
+        DONE(tile);
     }
 
-    free(result);
+    DONE(result);
 }
