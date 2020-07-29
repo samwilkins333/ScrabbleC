@@ -8,6 +8,10 @@ direction_t down = { "down", 0, 1 };
 direction_t *main_directions[] = { &right, &down };
 direction_t *all_directions[] = { &left, &right, &up, &down };
 
+inline char resolved_letter(tile_t *tile) {
+    return (char)(tile->letter_proxy ? tile->letter_proxy : tile->letter);
+}
+
 inline direction_t *inverse(direction_t *direction) {
     if (direction == &left) {
         return &right;

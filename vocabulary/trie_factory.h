@@ -2,4 +2,4 @@
 
 #include "trie.h"
 
-trie_t *construct_trie_from(const char *relative_filepath);
+trie_t *trie_factory(const char *relative_filepath);

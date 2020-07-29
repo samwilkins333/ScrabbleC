@@ -16,6 +16,8 @@ typedef struct tile {
     list_link_t result_link;
 } tile_t;
 
+char resolved_letter(tile_t *tile);
+
 typedef struct tile_placement {
     int x;
     int y;
@@ -62,17 +64,17 @@ direction_t *normalize(direction_t *direction);
 int next_coordinates(int x, int y, direction_t *d, coordinates_t *next);
 int next_tile(int x, int y, direction_t *d, size_t dim, board_state_unit_t *played[dim][dim], tile_placement_t *out);
 
-typedef struct scored_candidate {
+typedef struct candidate {
     tile_placement_t **placements;
     size_t placements_count;
     int score;
     direction_t *direction;
     char *serialized;
     list_link_t link;
-} scored_candidate_t;
+} candidate_t;
 
 typedef struct generation_result {
-    scored_candidate_t **candidates;
+    candidate_t **candidates;
     size_t count;
     list_t allocated_tile_placements;
     list_t allocated_tiles;

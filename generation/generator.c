@@ -3,7 +3,7 @@
 trie_node_t *trie_root;
 extern int allocations;
 
-generation_result_t *generator_compute_all_candidates(list_t *rack, size_t dim, board_state_unit_t *played[dim][dim]) {
+generation_result_t *compute(list_t *rack, size_t dim, board_state_unit_t *played[dim][dim]) {
     size_t existing_tile_count = 0;
     if (!validate_input(dim, played, rack, &existing_tile_count)) {
         return NULL;
@@ -33,22 +33,22 @@ generation_result_t *generator_compute_all_candidates(list_t *rack, size_t dim, 
         }
     }
 
-    NEW(scored_candidate_t *, candidates, all.size);
+    NEW(candidate_t *, candidates, all.size);
     result->candidates = candidates;
     size_t i = 0;
-    list_iterate(&all.anchor, candidate, scored_candidate_t, link) {
+    list_iterate(&all.anchor, candidate, candidate_t, link) {
         result->candidates[i++] = candidate;
     }
 
-    qsort(result->candidates, all.size, sizeof(scored_candidate_t *), compare_candidates);
+    qsort(result->candidates, all.size, sizeof(candidate_t *), compare_candidates);
     result->count = all.size;
 
     return result;
 }
 
 int compare_candidates(const void *one, const void *two) {
-    scored_candidate_t *c_one = *(scored_candidate_t **)one;
-    scored_candidate_t *c_two = *(scored_candidate_t **)two;
+    candidate_t *c_one = *(candidate_t **)one;
+    candidate_t *c_two = *(candidate_t **)two;
     int score_diff = c_two->score - c_one->score;
     if (score_diff) {
         return score_diff;
@@ -127,7 +127,7 @@ static inline void generate(size_t h_x, size_t h_y, size_t x, size_t y, list_t *
         if (current_placed_count && (cross_anchor = trie_node_get_child(node, DELIMITER)) && next_coordinates(h_x, h_y, i, &next)) {
             generate(h_x, h_y, next.x, next.y, rack, placed, accumulated, all, cross_anchor, i, dim, played, result);
         }
-    } else if (node && (child_node = trie_node_get_child(node, (char)(tile->letter_proxy ? tile->letter_proxy : tile->letter)))) {
+    } else if ((child_node = trie_node_get_child(node, resolved_letter(tile)))) {
         evaluate_and_proceed(h_x, h_y, x, y, rack, placed, accumulated + tile->value, all, child_node, d, dim, played, result);
     }
 }
@@ -178,7 +178,7 @@ static inline void evaluate_and_proceed(size_t  h_x, size_t h_y, size_t x, size_
     if (node->is_terminal && !next_tile(x, y, d, dim, played, NULL)) {
         if (d == &left || d == &up || !next_tile(h_x, h_y, i, dim, played, NULL)) {
             if ((total_score = apply_scorer(placed, dim, played, accumulated))) {
-                NEW(scored_candidate_t, candidate, 1);
+                NEW(candidate_t, candidate, 1);
                 candidate->direction = normalize(d);
                 candidate->score = total_score;
                 NEW(tile_placement_t *, p, placed->size)
@@ -194,7 +194,7 @@ static inline void evaluate_and_proceed(size_t  h_x, size_t h_y, size_t x, size_
                 candidate->serialized = serialized;
                 for (int k = 0; k < placed->size; ++k) {
                     tile_t *tile =  candidate->placements[k]->tile;
-                    sprintf(candidate->serialized, "%s%c", candidate->serialized, tile->letter_proxy ? tile->letter_proxy : tile->letter);
+                    sprintf(candidate->serialized, "%s%c", candidate->serialized, resolved_letter(tile));
                 }
                 list_insert_tail(all, &candidate->link);
             }
@@ -230,7 +230,7 @@ static inline int compute_cross_word(size_t  s_x, size_t  s_y, tile_t *to_place,
         placement->y = y;
         placement->tile = tile;
         list_insert_tail(&temporary, &placement->link);
-        if (!(node = trie_node_get_child(node, (char)(tile->letter_proxy ? tile->letter_proxy : tile->letter)))) {
+        if (!(node = trie_node_get_child(node, resolved_letter(tile)))) {
             break;
         }
         tile_placement_t next;
@@ -297,14 +297,14 @@ static inline int compute_score_of(size_t dim, board_state_unit_t *played[dim][d
 
     size_t total = sum * word_multiplier;
     if (new_tiles == RACK_CAPACITY) {
-        total += 50;
+        total += BINGO;
     }
     return total;
 }
 
 void generator_clean_up(generation_result_t *result) {
     for (int c = 0; c < result->count; ++c) {
-        scored_candidate_t *candidate = result->candidates[c];
+        candidate_t *candidate = result->candidates[c];
         DONE(candidate->serialized);
         DONE(candidate->placements);
         DONE(candidate);

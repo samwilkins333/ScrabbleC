@@ -8,7 +8,7 @@ int allocations = 0;
 
 int main() {
     // initialize trie
-    trie_t *trie = construct_trie_from("../ospd4.txt");
+    trie_t *trie = trie_factory(DICTIONARY);
     if (!trie) {
         return 1;
     }
@@ -40,18 +40,18 @@ int main() {
     }
 
     // generate candidates
-    generation_result_t *result = generator_compute_all_candidates(&rack, DIMENSIONS, played);
+    generation_result_t *result = compute(&rack, DIMENSIONS, played);
 
 #ifdef LOGGING
     NEW(char, word_display, 13);
     NEW(char, location, 35);
     printf("%-13s  score%-3s %-11s <location>\n\n", "word", "", "direction");
     size_t invalid = 0;
-    for (int c = 0; c < result->count; c++) {
-        scored_candidate_t *candidate = result->candidates[c];
+    for (size_t c = 0; c < result->count; c++) {
+        candidate_t *candidate = result->candidates[c];
         memset(word_display, 0, 13);
         memset(location, 0, 35);
-        for (int i = 0; i < candidate->placements_count; i++) {
+        for (size_t i = 0; i < candidate->placements_count; i++) {
             tile_placement_t *placement = candidate->placements[i];
             tile_t *tile = placement->tile;
             if (tile->letter_proxy) {
