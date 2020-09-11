@@ -41,19 +41,17 @@ int main() {
         }
     }
 
-    // generate candidates
     long start, mark;
     struct timeval time_check;
 
     gettimeofday(&time_check, NULL);
     start = (long) time_check.tv_sec * 1000 + (long) time_check.tv_usec / 1000;
 
+    // generate candidates
     generation_result_t *result = compute(&rack, DIMENSIONS, played);
 
     gettimeofday(&time_check, NULL);
     mark = (long) time_check.tv_sec * 1000 + (long) time_check.tv_usec / 1000;
-
-    printf("Elapsed wall clock time for computation alone: %ld ms\n", mark - start);
 
 #ifdef LOGGING
     NEW(char, word_display, 13);
@@ -83,7 +81,7 @@ int main() {
     DONE(word_display);
     DONE(location);
 
-    printf("\nFound %ld candidates.\n", result->count);
+    printf("\nFound %ld candidates in %ld ms.\n", result->count, mark - start);
 
     if (invalid) {
         printf("%ld words were invalid.\n", invalid);
