@@ -1,5 +1,7 @@
 #include "vocabulary/trie_factory.h"
 #include "generation/generator.h"
+#include <time.h>
+#include <sys/time.h>
 
 #define LOGGING
 
@@ -40,7 +42,18 @@ int main() {
     }
 
     // generate candidates
+    long start, mark;
+    struct timeval time_check;
+
+    gettimeofday(&time_check, NULL);
+    start = (long) time_check.tv_sec * 1000 + (long) time_check.tv_usec / 1000;
+
     generation_result_t *result = compute(&rack, DIMENSIONS, played);
+
+    gettimeofday(&time_check, NULL);
+    mark = (long) time_check.tv_sec * 1000 + (long) time_check.tv_usec / 1000;
+
+    printf("Elapsed wall clock time for computation alone: %ld ms\n", mark - start);
 
 #ifdef LOGGING
     NEW(char, word_display, 13);

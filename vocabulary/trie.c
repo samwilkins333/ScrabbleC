@@ -36,25 +36,16 @@ inline void trie_add_word(trie_t *self, const char *word) {
     if (trie_add_nodes(self, word)) {
         self->word_count++;
     }
-    size_t length = strlen(word);
-    if (length > 1) {
-        size_t current_index = length - 1;
-        NEW(char, variation, (length + 2));
-        for (int i = 0; i < current_index; ++i) {
-            variation[i] = word[i + 1];
-        }
-        variation[current_index] = DELIMITER;
-        variation[length] = word[0];
-        while (current_index > 0) {
-            trie_add_nodes(self, variation);
-            variation[current_index--] = variation[0];
-            for (int i = 0; i < current_index; ++i) {
-                variation[i] = variation[i + 1];
-            }
-            variation[current_index] = DELIMITER;
-        }
-        DONE(variation);
-    }
+    size_t split_index = strlen(word);
+    NEW(char, variation, (split_index + 2));
+    memcpy(variation, word, split_index);
+    do {
+        variation[split_index--] = variation[0];
+        memcpy(variation, &variation[1], split_index);
+        variation[split_index] = DELIMITER;
+        trie_add_nodes(self, variation);
+    } while (split_index > 0);
+    DONE(variation);
 }
 
 inline int trie_includes_word(trie_t *self, const char *word) {

@@ -12,5 +12,7 @@ typedef struct trie_node {
 } trie_node_t;
 
 trie_node_t *trie_node_add_child_to(trie_node_t *node, char letter, unsigned short is_terminal);
+
 trie_node_t *trie_node_get_child(trie_node_t *node, char letter);
+
 void trie_node_destroy(trie_node_t *node);

@@ -59,9 +59,13 @@ extern direction_t *main_directions[];
 extern direction_t *all_directions[];
 
 direction_t *inverse(direction_t *direction);
+
 direction_t *perpendicular(direction_t *direction);
+
 direction_t *normalize(direction_t *direction);
+
 int next_coordinates(int x, int y, direction_t *d, coordinates_t *next);
+
 int next_tile(int x, int y, direction_t *d, size_t dim, board_state_unit_t *played[dim][dim], tile_placement_t *out);
 
 typedef struct candidate {

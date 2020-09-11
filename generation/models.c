@@ -1,15 +1,15 @@
 #include "models.h"
 
-direction_t left = { "left", -1, 0 };
-direction_t right = { "right", 1, 0 };
-direction_t up = { "up", 0, -1 };
-direction_t down = { "down", 0, 1 };
+direction_t left = {"left", -1, 0};
+direction_t right = {"right", 1, 0};
+direction_t up = {"up", 0, -1};
+direction_t down = {"down", 0, 1};
 
-direction_t *main_directions[] = { &right, &down };
-direction_t *all_directions[] = { &left, &right, &up, &down };
+direction_t *main_directions[] = {&right, &down};
+direction_t *all_directions[] = {&left, &right, &up, &down};
 
 inline char resolved_letter(tile_t *tile) {
-    return (char)(tile->letter_proxy ? tile->letter_proxy : tile->letter);
+    return (char) (tile->letter_proxy ? tile->letter_proxy : tile->letter);
 }
 
 inline direction_t *inverse(direction_t *direction) {
@@ -52,7 +52,8 @@ inline int next_coordinates(int x, int y, direction_t *d, coordinates_t *next) {
     return 0;
 }
 
-inline int next_tile(int x, int y, direction_t *d, size_t dim,  board_state_unit_t *played[dim][dim], tile_placement_t *out) {
+inline int
+next_tile(int x, int y, direction_t *d, size_t dim, board_state_unit_t *played[dim][dim], tile_placement_t *out) {
     coordinates_t next;
     tile_t *tile;
     if (next_coordinates(x, y, d, &next) && (tile = played[next.y][next.x]->tile)) {

@@ -12,7 +12,11 @@ typedef struct trie {
 } trie_t;
 
 trie_t *trie_initialize();
+
 unsigned short trie_add_nodes(trie_t *trie, const char *word);
+
 void trie_add_word(trie_t *self, const char *word);
+
 int trie_includes_word(trie_t *self, const char *word);
+
 void trie_destroy(trie_t *trie);
